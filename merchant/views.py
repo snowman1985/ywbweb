@@ -11,6 +11,8 @@ from django.http import *
 from django.shortcuts import render_to_response
 from  django.template import RequestContext
 import jpype
+from bloomfilter import bf
+import os
 # Create your views here.
 
 
@@ -116,9 +118,19 @@ class CommercialPostView(FormView):
     def CheckContent(self, content):
         classpath = ".:IKAnalyzer2012_u6.jar"
         jpype.startJVM(jpype.getDefaultJVMPath(), "-Djava.class.path=%s" % classpath)
+        #checkclass = jpype.JClass("Segmenter")
+        #checkclass = jpype.JClass("/home/test/xueyu/newvers/ywbweb/merchant/Segmenter")
+        print "here",os.getcwd()
         checkclass = jpype.JClass("Segmenter")
         checkobj = checkclass(content)
         for item in checkobj.CutWord():
+            print item
+            if bf.lookup(item.encode('utf-8')):
+	        print "contain sensitive word"
+                jpype.shutdownJVM()
+                return False
+        jpype.shutdownJVM()
+        return True
         
 
     def form_valid(self, form):
@@ -129,6 +141,9 @@ class CommercialPostView(FormView):
             form_post = PostCommercialForm(self.request.POST, self.request.FILES)
             if form_post.is_valid():
                 content = form_post.cleaned_data["content"]
+                if not self.CheckContent(content):
+                    print("content contain sensitive word")        
+		    print(form_post.errors) 
                 temp = form_post.save(commit=False)
                 temp.merchant = self.request.user
                 if self.request.FILES:

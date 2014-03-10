@@ -54,6 +54,7 @@ class PostCommercialForm(forms.ModelForm):
     def clean_photo(self):
         photo = self.cleaned_data.get('photo', False)
         if photo:
+            print photo
             if photo._size > 4 * 1024 * 1024:
 		raise forms.ValidationError("first photo is too large")
             return photo
