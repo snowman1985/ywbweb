@@ -10,6 +10,7 @@ from .models import *
 from django.http import *
 from django.shortcuts import render_to_response
 from  django.template import RequestContext
+import jpype
 # Create your views here.
 
 
@@ -111,6 +112,14 @@ class CommercialPostView(FormView):
         context['login_form'] = LoginForm()
         context['post_form'] = PostCommercialForm()
         return context
+    
+    def CheckContent(self, content):
+        classpath = ".:IKAnalyzer2012_u6.jar"
+        jpype.startJVM(jpype.getDefaultJVMPath(), "-Djava.class.path=%s" % classpath)
+        checkclass = jpype.JClass("Segmenter")
+        checkobj = checkclass(content)
+        for item in checkobj.CutWord():
+        
 
     def form_valid(self, form):
         # This method is called when valid form data has been POSTed.
@@ -119,6 +128,7 @@ class CommercialPostView(FormView):
         if self.request.method == 'POST':
             form_post = PostCommercialForm(self.request.POST, self.request.FILES)
             if form_post.is_valid():
+                content = form_post.cleaned_data["content"]
                 temp = form_post.save(commit=False)
                 temp.merchant = self.request.user
                 if self.request.FILES:
