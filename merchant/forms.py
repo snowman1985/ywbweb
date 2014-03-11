@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import User 
 from django.contrib import auth
+from django.core.files.uploadedfile import UploadedFile
 from .models import *
 
 def validate_username(username):
@@ -53,23 +54,26 @@ class LoginForm(forms.Form):
 class PostCommercialForm(forms.ModelForm):
     def clean_photo(self):
         photo = self.cleaned_data.get('photo', False)
-        if photo:
-            print photo
+        if photo and isinstance(photo, UploadedFile):
+            print "photo:",photo
+            print "type:",type(photo)
+            #print dir(photo)
+            print "name",photo.name
             if photo._size > 4 * 1024 * 1024:
 		raise forms.ValidationError("first photo is too large")
-            return photo
+        return photo
     def clean_photo1(self):
         photo1 = self.cleaned_data.get('photo1', False)
-        if photo1:
+        if photo1 and isinstance(photo1, UploadedFile):
             if photo1._size > 4 * 1024 * 1024:
 		raise forms.ValidationError("second photo is too large")
-            return photo1
+        return photo1
     def clean_photo2(self):
 	photo2 = self.cleaned_data.get('photo2', False)
-	if photo2:
+	if photo2 and isinstance(photo2, UploadedFile):
 	    if photo2._size > 4 * 1024 * 1024:
 		raise forms.ValidationError("third photo is too large")
-	    return photo2
+	return photo2
     class Meta:
         model = Commercial
         fields = ('title', 'content', 'photo', 'photo1', 'photo2')

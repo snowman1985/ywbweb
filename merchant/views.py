@@ -13,6 +13,8 @@ from  django.template import RequestContext
 import jpype
 from bloomfilter import bf
 import os
+from ck import parent, child, p
+#from checkcontent import *
 # Create your views here.
 
 
@@ -115,12 +117,15 @@ class CommercialPostView(FormView):
         context['post_form'] = PostCommercialForm()
         return context
     
-    def CheckContent(self, content):
+    def CheckContent1(self, content):
         classpath = ".:IKAnalyzer2012_u6.jar"
-        jpype.startJVM(jpype.getDefaultJVMPath(), "-Djava.class.path=%s" % classpath)
+        print "here",os.getcwd()
+        print "jvm start?:", jpype.isJVMStarted()
+        if not jpype.isJVMStarted():
+            jpype.startJVM(jpype.getDefaultJVMPath(), "-Djava.class.path=%s" % classpath)
+        #jpype.attachThreadToJVM()
         #checkclass = jpype.JClass("Segmenter")
         #checkclass = jpype.JClass("/home/test/xueyu/newvers/ywbweb/merchant/Segmenter")
-        print "here",os.getcwd()
         checkclass = jpype.JClass("Segmenter")
         checkobj = checkclass(content)
         for item in checkobj.CutWord():
@@ -129,7 +134,10 @@ class CommercialPostView(FormView):
 	        print "contain sensitive word"
                 jpype.shutdownJVM()
                 return False
-        jpype.shutdownJVM()
+        if jpype.isJVMStarted():
+            print "jvm stoped"
+            #jpype.shutdownJVM()
+            print "jvm started end:", jpype.isJVMStarted()
         return True
         
 
@@ -141,9 +149,11 @@ class CommercialPostView(FormView):
             form_post = PostCommercialForm(self.request.POST, self.request.FILES)
             if form_post.is_valid():
                 content = form_post.cleaned_data["content"]
-                if not self.CheckContent(content):
-                    print("content contain sensitive word")        
-		    print(form_post.errors) 
+                #if not self.CheckContent1(content):
+                #    print("content contain sensitive word")        
+		#    print(form_post.errors) 
+                parent.send(content)
+                print "##parent recv:", parent.recv()
                 temp = form_post.save(commit=False)
                 temp.merchant = self.request.user
                 if self.request.FILES:
